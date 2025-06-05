@@ -40,7 +40,7 @@
 
 1.  **Клонировать репозиторий:**
     ```bash
-    git clone https://github.com/ski11s/Movie-Bot.git
+    https://github.com/saki11s/Movie-Bot.git
     ```
 
 2.  **Создать и активировать виртуальное окружение (рекомендуется):**
