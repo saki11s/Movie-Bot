@@ -1,18 +1,13 @@
-# bot.py
-
 import config
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
-# Импортируем наш новый модуль с логикой
 import logic 
 
 bot = telebot.TeleBot(config.API_TOKEN)
 
-# Инициализация базы данных (таблицы создаются, если их нет)
 logic.setup_database()
 
-# --- Функции для генерации разметки клавиатур (остаются в bot.py, так как они специфичны для Telegram) ---
 
 def main_markup():
   markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False)
@@ -22,7 +17,7 @@ def main_markup():
   return markup
 
 def add_to_favorite_markup(movie_id, user_id):
-    is_favorite = logic.is_movie_in_favorites(user_id, movie_id) # Используем функцию из logic.py
+    is_favorite = logic.is_movie_in_favorites(user_id, movie_id) 
     markup = InlineKeyboardMarkup()
     if is_favorite:
         markup.add(InlineKeyboardButton("💔 Удалить из избранного", callback_data=f'unfavorite_{movie_id}'))
@@ -34,22 +29,20 @@ def create_movie_selection_markup(movies_data_list):
     markup = InlineKeyboardMarkup()
     for movie_data in movies_data_list[:5]: 
         movie_year = movie_data['release_date'][:4] if movie_data['release_date'] else 'Неизвестен'
-        translated_title = logic.translate_text(movie_data['title']) # Используем функцию из logic.py
+        translated_title = logic.translate_text(movie_data['title']) 
         markup.add(InlineKeyboardButton(f"{translated_title.strip()} ({movie_year})", callback_data=f"show_movie_{movie_data['ID']}"))
     return markup
 
 def create_genre_selection_markup(genres_data_list):
     markup = InlineKeyboardMarkup(row_width=2)
     buttons = []
-    for genre_data in genres_data_list: # genres_data_list - это список sqlite3.Row
+    for genre_data in genres_data_list:
         genre_id = genre_data['genre_ID']
         genre_name_english = genre_data['genre']
-        translated_genre_name = logic.translate_text(genre_name_english) # Используем функцию из logic.py
+        translated_genre_name = logic.translate_text(genre_name_english) 
         buttons.append(InlineKeyboardButton(translated_genre_name, callback_data=f"genre_{genre_id}"))
     markup.add(*buttons)
     return markup
-
-# --- Основная функция для отправки информации о фильме ---
 
 def send_movie_info_message(chat_id, movie_data, user_id=None, message_id_to_edit=None):
     if not movie_data:
@@ -77,8 +70,6 @@ def send_movie_info_message(chat_id, movie_data, user_id=None, message_id_to_edi
     else:
         bot.send_message(chat_id=chat_id, text=info, reply_markup=markup, parse_mode="HTML")
 
-# --- Обработчики команд и сообщений ---
-
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     bot.send_message(message.chat.id, """
@@ -95,7 +86,7 @@ def send_welcome(message):
 """, reply_markup=main_markup(), parse_mode="HTML")
 
 @bot.message_handler(func=lambda message: message.text == '🎲 Случайный фильм' or message.text == '/random')
-def random_movie_command(message): # Переименовал, чтобы не конфликтовать с импортом
+def random_movie_command(message):
     movie_data = logic.get_random_movie_data()
     if movie_data:
         send_movie_info_message(message.chat.id, movie_data, message.from_user.id)
@@ -103,9 +94,9 @@ def random_movie_command(message): # Переименовал, чтобы не �
         bot.send_message(message.chat.id, "К сожалению, не удалось найти случайный фильм.")
 
 @bot.message_handler(func=lambda message: message.text == '🔍 Поиск по названию' or message.text == '/search_by_title')
-def ask_for_title_command(message): # Переименовал
+def ask_for_title_command(message): 
     bot.send_message(message.chat.id, "Пожалуйста, введите название фильма, который вы ищете:")
-    bot.register_next_step_handler(message, process_title_search_input) # Используем новый обработчик
+    bot.register_next_step_handler(message, process_title_search_input) 
 
 def process_title_search_input(message):
     user_original_query = message.text.strip() 
@@ -131,7 +122,7 @@ def process_title_search_input(message):
         bot.send_message(message.chat.id, "К сожалению, я не смог найти фильм с таким названием😞")
 
 @bot.message_handler(func=lambda message: message.text == '🎭 Поиск по жанру' or message.text == '/search_by_genre')
-def list_genres_command(message): # Переименовал
+def list_genres_command(message):
     genres_data = logic.get_all_genres_from_db()
     if genres_data:
         bot.send_message(message.chat.id, "Выберите жанр:", reply_markup=create_genre_selection_markup(genres_data))
@@ -139,7 +130,7 @@ def list_genres_command(message): # Переименовал
         bot.send_message(message.chat.id, "Жанры не найдены.")
 
 @bot.message_handler(func=lambda message: message.text == '⭐ Мои избранные' or message.text == '/my_favorites')
-def list_my_favorites_command(message): # Переименовал
+def list_my_favorites_command(message):
     user_id = message.from_user.id
     favorite_movies = logic.get_favorite_movies_from_db(user_id)
 
@@ -153,8 +144,6 @@ def list_my_favorites_command(message): # Переименовал
     else:
         bot.send_message(message.chat.id, "У вас пока нет избранных фильмов. Добавьте что-нибудь! ✨")
 
-
-# --- Обработчик инлайн-кнопок (callback_query) ---
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
@@ -211,8 +200,7 @@ def callback_query(call):
         bot.answer_callback_query(call.id)
 
 @bot.message_handler(func=lambda message: True)
-def echo_message(message): # Это теперь наш универсальный обработчик для поиска по названию, если другое не подошло
+def echo_message(message):
     process_title_search_input(message)
 
-# --- Запуск бота ---
 bot.infinity_polling()
