@@ -1,13 +1,9 @@
-# logic.py
-
 import sqlite3
 import requests
 
-# --- Константы (могут быть и в config.py, но для логики перевода оставим здесь) ---
 DB_PATH = 'movie.db' 
 TRANSLATION_API_URL = "http://localhost:5001/translate" # Или твой актуальный URL
 
-# --- Вспомогательные функции для работы с БД ---
 def get_db_connection():
     """Устанавливает соединение с базой данных."""
     conn = sqlite3.connect(DB_PATH)
@@ -35,7 +31,6 @@ def setup_database():
     conn.commit()
     conn.close()
 
-# --- Функция для перевода текста с кешированием ---
 def translate_text(text, target_lang='ru', source_lang='auto'):
     if not text:
         return ""
@@ -57,9 +52,6 @@ def translate_text(text, target_lang='ru', source_lang='auto'):
             "target": target_lang,
             "format": "text"
         }
-        # Если используешь API-ключ для LibreTranslate, раскомментируй и убедись, что ключ есть в config.py
-        # if hasattr(config, 'LIBRETRANSLATE_API_KEY') and config.LIBRETRANSLATE_API_KEY:
-        #     data["api_key"] = config.LIBRETRANSLATE_API_KEY
         
         response = requests.post(TRANSLATION_API_URL, json=data, timeout=15)
         response.raise_for_status()
@@ -81,10 +73,8 @@ def translate_text(text, target_lang='ru', source_lang='auto'):
         conn.commit()
         return text 
     finally:
-        if conn: # Убедимся, что соединение существует перед закрытием
+        if conn: 
             conn.close()
-
-# --- Функции для извлечения данных из БД ---
 
 def get_random_movie_data():
     """Извлекает данные для случайного фильма."""
@@ -175,9 +165,9 @@ def add_movie_to_favorites(user_id, movie_id):
     try:
         cursor.execute("INSERT INTO user_favorites (user_id, movie_id) VALUES (?, ?)", (user_id, movie_id))
         conn.commit()
-        return True # Успешно добавлено
+        return True 
     except sqlite3.IntegrityError:
-        return False # Уже в избранном
+        return False 
     finally:
         conn.close()
 
@@ -187,7 +177,7 @@ def remove_movie_from_favorites(user_id, movie_id):
     cursor = conn.cursor()
     cursor.execute("DELETE FROM user_favorites WHERE user_id = ? AND movie_id = ?", (user_id, movie_id))
     conn.commit()
-    success = cursor.rowcount > 0 # Проверяем, была ли удалена хотя бы одна строка
+    success = cursor.rowcount > 0 
     conn.close()
     return success
 
